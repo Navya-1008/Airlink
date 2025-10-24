@@ -56,4 +56,4 @@ This project was developed as part of an academic initiative:
 * Navya B V ([https://github.com/Navya-1008](https://github.com/Navya-1008))
 * Poorvi V Shetty
 * Shravani Satish
-* Swaradaa Raghuram
+* Swaradaa Raghuram ([https://github.com/Swaradaaraghuram](https://github.com/Swaradaaraghuram))
