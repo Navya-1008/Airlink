@@ -54,4 +54,6 @@ AirLink is an intelligent airspace management platform for drones and eVTOLs, de
 This project was developed as part of an academic initiative:
 
 * Navya B V ([https://github.com/Navya-1008](https://github.com/Navya-1008))
-* [Add your teammates here if any]
+* Poorvi V Shetty
+* Shravani Satish
+* Swaradaa Raghuram
