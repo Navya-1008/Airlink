@@ -36,7 +36,7 @@ AirLink is an intelligent airspace management platform for drones and eVTOLs, de
 
 ## System Architecture
 
-<img width="850" alt="AirLink Architecture Diagram" src="https://github.com/user-attachments/assets/example-diagram-id" />  
+<img width="884" height="714" alt="image" src="https://github.com/user-attachments/assets/c200dd03-5737-4b23-b7fd-54b9958d4742" /> 
 
 ---
 
