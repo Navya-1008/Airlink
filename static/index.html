@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+{% raw %}
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AirLink ATC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg-void:#030712;--bg-panel:#080f1c;--bg-card:#0f2035;
+  --cyan:#00e5ff;--cyan-dim:#00b8cc;--cyan-glow:rgba(0,229,255,0.15);
+  --red:#ff3d57;--green:#00e676;--amber:#ffb300;
+  --border:#1a3a5c;--border-bright:#00e5ff44;
+  --text-primary:#e0f7ff;--text-secondary:#5a8aaa;--text-dim:#2a4a6a;
+  --font-mono:"Share Tech Mono",monospace;--font-ui:"Rajdhani",sans-serif;
+  --sidebar-w:320px;
+}
+html,body,#root{width:100%;height:100%;background:var(--bg-void);overflow:hidden;}
+body{font-family:var(--font-ui);}
+body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,0.012) 2px,rgba(0,229,255,0.012) 4px);pointer-events:none;z-index:9999;}
+#map-container{position:absolute;inset:0;}
+#map{width:100%;height:100%;}
+.leaflet-control-attribution{display:none!important;}
+.leaflet-control-zoom a{background:var(--bg-panel)!important;color:var(--cyan)!important;border-color:var(--border)!important;}
+
+/* TOPBAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:56px;background:linear-gradient(180deg,rgba(3,7,18,0.98),rgba(8,15,28,0.92));border-bottom:1px solid var(--border-bright);display:flex;align-items:center;padding:0 20px;gap:18px;z-index:1000;backdrop-filter:blur(12px);}
+.logo{font-size:22px;font-weight:700;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;display:flex;align-items:center;gap:10px;}
+.logo-pulse{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:pulse 2s ease-in-out infinite;}
+.logo-sub{font-size:10px;font-weight:400;letter-spacing:6px;color:var(--text-secondary);align-self:flex-end;margin-bottom:4px;}
+.tb-div{width:1px;height:30px;background:var(--border);}
+.tb-stat{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.tb-val{font-family:var(--font-mono);font-size:15px;color:var(--cyan);}
+.tb-lbl{font-size:9px;letter-spacing:2px;color:var(--text-secondary);text-transform:uppercase;}
+.tb-time{margin-left:auto;font-family:var(--font-mono);font-size:17px;color:var(--cyan);letter-spacing:2px;}
+.tb-badge{display:flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid;border-radius:3px;font-size:11px;letter-spacing:1.5px;font-weight:600;font-family:var(--font-mono);}
+.badge-safe{border-color:var(--green);color:var(--green);}
+.badge-conflict{border-color:var(--amber);color:var(--amber);animation:blink 1.2s step-end infinite;}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:56px;right:0;bottom:0;width:var(--sidebar-w);background:linear-gradient(180deg,rgba(8,15,28,0.97),rgba(3,7,18,0.96));border-left:1px solid var(--border-bright);display:flex;flex-direction:column;z-index:900;backdrop-filter:blur(16px);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);}
+.sidebar.collapsed{transform:translateX(var(--sidebar-w));}
+.sb-toggle{position:fixed;top:50%;width:28px;height:64px;z-index:950;background:rgba(8,15,28,0.97);border:1px solid var(--border-bright);border-right:none;border-radius:6px 0 0 6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--cyan);font-size:13px;transform:translateY(-50%);transition:right 0.3s cubic-bezier(0.4,0,0.2,1);}
+.sb-toggle:hover{background:var(--cyan-glow);}
+.sb-sec{padding:14px 16px;border-bottom:1px solid var(--border);}
+.sec-hdr{font-size:9px;letter-spacing:3px;color:var(--text-secondary);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.sec-hdr::after{content:"";flex:1;height:1px;background:var(--border);}
+
+/* DRONE CARD */
+.drone-card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:12px;margin-bottom:8px;position:relative;overflow:hidden;transition:border-color 0.2s;}
+.drone-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--dc,var(--cyan));}
+.drone-card:hover{border-color:var(--border-bright);}
+.dc-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.dc-img{width:26px;height:26px;object-fit:contain;opacity:0.9;}
+.dc-id{font-family:var(--font-mono);font-size:11px;color:var(--dc,var(--cyan));background:rgba(0,229,255,0.08);padding:2px 6px;border-radius:3px;border:1px solid var(--dc,var(--cyan));letter-spacing:1px;}
+.dc-name{font-size:13px;font-weight:600;letter-spacing:1px;color:var(--text-primary);}
+.dc-alt{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;border:1px solid var(--border);}
+.rm-btn{background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;transition:color 0.2s;padding:2px 4px;margin-left:4px;}
+.rm-btn:hover{color:var(--red);}
+.f-lbl{font-size:9px;letter-spacing:1.5px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;}
+.f-inp{width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:3px;padding:7px 10px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;outline:none;transition:border-color 0.2s;margin-bottom:8px;}
+.f-inp:focus{border-color:var(--cyan);background:rgba(0,229,255,0.04);}
+.f-inp::placeholder{color:var(--text-dim);}
+.add-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--border-bright);border-radius:3px;color:var(--cyan);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.add-btn:hover{background:var(--cyan-glow);border-style:solid;}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px;}
+.btn{padding:11px;border:1px solid;border-radius:3px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;width:100%;font-family:var(--font-ui);}
+.btn-primary{background:var(--cyan);color:#000;border-color:var(--cyan);}
+.btn-primary:hover{background:var(--cyan-dim);box-shadow:0 0 20px rgba(0,229,255,0.3);}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--text-secondary);border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--red);color:var(--red);}
+.sb-scroll{flex:1;overflow-y:auto;padding:10px 12px;}
+.sb-scroll::-webkit-scrollbar{width:3px;}
+.sb-scroll::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* CONFLICT PANEL */
+.conflict-panel{position:fixed;top:72px;left:16px;width:270px;background:rgba(8,15,28,0.95);border:1px solid var(--border-bright);border-radius:4px;z-index:900;backdrop-filter:blur(16px);overflow:hidden;}
+.cp-title{padding:10px 14px;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:3px;color:var(--text-secondary);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.cp-row{padding:8px 14px;border-bottom:1px solid var(--border);font-size:11px;}
+.cp-row:last-child{border-bottom:none;}
+.cp-drones{font-family:var(--font-mono);color:var(--amber);margin-bottom:3px;font-size:11px;}
+.cp-resolve{color:var(--text-secondary);font-size:10px;line-height:1.4;}
+.cp-empty{padding:10px 14px;font-family:var(--font-mono);font-size:11px;color:var(--green);}
+
+/* TELEMETRY */
+.telem-panel{position:fixed;bottom:20px;left:16px;width:270px;background:rgba(8,15,28,0.95);border:1px solid var(--border-bright);border-radius:4px;z-index:900;backdrop-filter:blur(16px);overflow:hidden;}
+.tp-title{padding:10px 14px;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:3px;color:var(--text-secondary);text-transform:uppercase;}
+.tp-row{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;border-bottom:1px solid var(--border);}
+.tp-row:last-child{border-bottom:none;}
+.tp-lbl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);}
+.tp-pip{width:7px;height:7px;border-radius:50%;}
+.tp-val{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);}
+
+/* LOADING */
+.loading-overlay{position:fixed;inset:0;background:rgba(3,7,18,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;backdrop-filter:blur(4px);}
+.radar-ring{width:80px;height:80px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--cyan);animation:spin 1s linear infinite;margin-bottom:20px;}
+.loading-text{font-family:var(--font-mono);font-size:13px;color:var(--cyan);letter-spacing:3px;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:9px 18px;border-radius:3px;font-family:var(--font-mono);font-size:12px;letter-spacing:1px;z-index:3000;border:1px solid;animation:fadeUp 0.3s ease;}
+.toast-success{background:rgba(0,230,118,0.15);color:var(--green);border-color:var(--green);}
+.toast-error{background:rgba(255,61,87,0.15);color:var(--red);border-color:var(--red);}
+.ch-h,.ch-v{position:fixed;background:rgba(0,229,255,0.06);pointer-events:none;z-index:500;}
+.ch-h{height:1px;left:0;right:0;top:50%;}
+.ch-v{width:1px;left:50%;top:56px;bottom:0;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+window.DRONE_IMG="data:image/png;base64,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";
+</script>
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+const COLORS=["#00e5ff","#ffb300","#00e676","#ff6d00","#ea80fc","#69f0ae","#ff3d57","#40c4ff"];
+const HUE_ROTATIONS=[180,40,130,25,280,140,350,200];
+const BLR=[12.9716,77.5946];
+const DRONE_SRC=window.DRONE_IMG;
+
+// Canvas-color drone icon for map markers
+const makeDroneIcon=color=>new Promise(resolve=>{
+  const canvas=document.createElement("canvas");
+  canvas.width=40;canvas.height=40;
+  const ctx=canvas.getContext("2d");
+  const img=new Image();
+  img.src=DRONE_SRC;
+  img.onload=()=>{
+    ctx.drawImage(img,0,0,40,40);
+    ctx.globalCompositeOperation="source-in";
+    ctx.fillStyle=color;
+    ctx.fillRect(0,0,40,40);
+    resolve(L.divIcon({
+      html:`<img src="${canvas.toDataURL()}" style="width:34px;height:34px;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 0 5px ${color}99)"/>`,
+      className:"",iconSize:[0,0],iconAnchor:[0,0]
+    }));
+  };
+  img.onerror=()=>resolve(null);
+});
+
+function App(){
+  const mapEl=useRef(null);
+  const mapRef=useRef(null);
+  const layersRef=useRef([]);
+  const [drones,setDrones]=useState([{id:1,from:"",to:""}]);
+  const [nextId,setNextId]=useState(2);
+  const [loading,setLoading]=useState(false);
+  const [telemetry,setTelemetry]=useState(null);
+  const [conflicts,setConflicts]=useState(null);
+  const [toast,setToast]=useState(null);
+  const [time,setTime]=useState("");
+  const [collapsed,setCollapsed]=useState(false);
+  const [altitudes,setAltitudes]=useState([]);
+
+  useEffect(()=>{
+    if(mapRef.current)return;
+    const m=L.map(mapEl.current,{zoomControl:false,attributionControl:false}).setView(BLR,11);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(m);
+    L.control.zoom({position:"bottomright"}).addTo(m);
+    mapRef.current=m;
+  },[]);
+
+  useEffect(()=>{
+    const upd=()=>{const n=new Date(),p=x=>String(x).padStart(2,"0");setTime(`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} IST`);};
+    upd();const id=setInterval(upd,1000);return()=>clearInterval(id);
+  },[]);
+
+  const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),4000);};
+  const clearLayers=()=>{layersRef.current.forEach(l=>{try{mapRef.current.removeLayer(l);}catch(e){}});layersRef.current=[];};
+  const addDrone=()=>{setDrones(d=>[...d,{id:nextId,from:"",to:""}]);setNextId(n=>n+1);};
+  const rmDrone=id=>setDrones(d=>d.filter(x=>x.id!==id));
+  const updDrone=(id,f,v)=>setDrones(d=>d.map(x=>x.id===id?{...x,[f]:v}:x));
+
+  const haversine=(a,b)=>{
+    const R=6371,dLat=(b[0]-a[0])*Math.PI/180,dLon=(b[1]-a[1])*Math.PI/180;
+    const s=Math.sin(dLat/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+  };
+
+  const animateDrone=async(path,color,ls)=>{
+    const icon=await makeDroneIcon(color);
+    if(!icon)return;
+    const mk=L.marker(path[0],{icon}).addTo(mapRef.current);
+    ls.push(mk);
+    let seg=0,prog=0,last=null;
+    const lerp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+    const step=ts=>{
+      if(!last)last=ts;
+      prog+=(ts-last)/1200;last=ts;
+      if(prog>=1){prog=0;seg++;if(seg>=path.length-1){mk.setLatLng(path[path.length-1]);return;}}
+      mk.setLatLng(lerp(path[seg],path[seg+1],prog));
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+
+  const predict=async()=>{
+    for(const d of drones){
+      if(!d.from.trim()||!d.to.trim()){showToast("Fill all origin & destination fields","error");return;}
+    }
+    setLoading(true);clearLayers();setTelemetry(null);setConflicts(null);setAltitudes([]);
+    const ls=[];
+    try{
+      // Call the real Flask ML backend
+      const res=await fetch("/predict_paths",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({drones:drones.map(d=>({from:d.from,to:d.to}))})
+      });
+      const data=await res.json();
+      if(data.error){showToast(data.error,"error");return;}
+
+      setAltitudes(data.altitudes||[]);
+      setConflicts(data.conflicts||[]);
+
+      const rows=[];
+      data.paths.forEach((path,i)=>{
+        const d=drones[i];
+        const color=COLORS[i%COLORS.length];
+        const latlngs=path.map(([lat,lon])=>[lat,lon]);
+        let dist=0;
+        for(let k=1;k<latlngs.length;k++)dist+=haversine(latlngs[k-1],latlngs[k]);
+        rows.push({id:d.id,from:d.from,to:d.to,dist:dist.toFixed(1),alt:data.altitudes?data.altitudes[i]:"-",color});
+
+        // Dashed flight path polyline
+        const poly=L.polyline(latlngs,{color,weight:2.5,opacity:0.85,dashArray:"8,5"}).addTo(mapRef.current);
+        ls.push(poly);
+
+        // Origin chip
+        const sm=L.divIcon({html:`<div style="background:${color};color:#000;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;font-family:monospace;white-space:nowrap;box-shadow:0 2px 6px ${color}66">▶ ${d.from}</div>`,className:"",iconSize:"auto"});
+        ls.push(L.marker(latlngs[0],{icon:sm}).addTo(mapRef.current));
+
+        // Destination chip
+        const em=L.divIcon({html:`<div style="background:#0d1a2e;color:${color};border:1px solid ${color};font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;font-family:monospace;white-space:nowrap">■ ${d.to}</div>`,className:"",iconSize:"auto"});
+        ls.push(L.marker(latlngs[latlngs.length-1],{icon:em}).addTo(mapRef.current));
+
+        animateDrone(latlngs,color,ls);
+        if(i===0)mapRef.current.fitBounds(poly.getBounds(),{padding:[80,80]});
+      });
+
+      layersRef.current=ls;
+      setTelemetry(rows);
+      const cCount=data.conflicts_detected||0;
+      showToast(cCount>0?`${cCount} conflict(s) detected & resolved by ML`:`${drones.length} safe path(s) computed — no conflicts`,"success");
+    }catch(e){
+      showToast("Cannot reach Flask backend — run app.py first","error");
+    }finally{setLoading(false);}
+  };
+
+  const clearAll=()=>{
+    clearLayers();setTelemetry(null);setConflicts(null);setAltitudes([]);
+    setDrones([{id:1,from:"",to:""},{id:2,from:"",to:""}]);setNextId(3);
+    showToast("Airspace cleared","success");
+  };
+
+  const hasConflicts=conflicts&&conflicts.length>0;
+
+  return(
+    <>
+      <div id="map-container" ref={mapEl}/>
+      <div className="ch-h"/><div className="ch-v"/>
+
+      {/* TOPBAR */}
+      <div className="topbar">
+        <div className="logo">
+          <div className="logo-pulse"/>AIRLINK<span className="logo-sub">ATC</span>
+        </div>
+        <div className="tb-div"/>
+        <div className="tb-stat">
+          <span className="tb-val">{drones.length}</span>
+          <span className="tb-lbl">UAVs</span>
+        </div>
+        <div className="tb-div"/>
+        <div className="tb-stat">
+          <span className="tb-val" style={{color:altitudes.length?["var(--cyan)","var(--amber)","var(--green)"][Math.min(altitudes.length-1,2)]:"var(--cyan)"}}>{altitudes.length?`${altitudes[0]}m+`:"—"}</span>
+          <span className="tb-lbl">Alt. Base</span>
+        </div>
+        <div className="tb-div"/>
+        <div className={`tb-badge ${hasConflicts?"badge-conflict":"badge-safe"}`}>
+          <div className="badge-dot"/>
+          {hasConflicts?`${conflicts.length} RESOLVED`:"AIRSPACE CLEAR"}
+        </div>
+        <div className="tb-time">{time}</div>
+      </div>
+
+      {/* SIDEBAR */}
+      <div className={`sidebar${collapsed?" collapsed":""}`}>
+        <div className="sb-sec"><div className="sec-hdr">Active UAVs</div></div>
+        <div className="sb-scroll">
+          {drones.map((d,i)=>{
+            const color=COLORS[i%COLORS.length];
+            const alt=altitudes[i]?`${altitudes[i]}m`:"auto";
+            return(
+              <div className="drone-card" key={d.id} style={{"--dc":color}}>
+                <div className="dc-hdr">
+                  <img src={DRONE_SRC} className="dc-img" alt="drone"
+                    style={{filter:`invert(1) sepia(1) saturate(5) hue-rotate(${HUE_ROTATIONS[i%8]}deg)`}}/>
+                  <span className="dc-id">UAV-{String(d.id).padStart(3,"0")}</span>
+                  <span className="dc-name">Drone {d.id}</span>
+                  <span className="dc-alt">{alt}</span>
+                  {drones.length>2&&<button className="rm-btn" onClick={()=>rmDrone(d.id)}>×</button>}
+                </div>
+                <div className="f-lbl">Origin</div>
+                <input className="f-inp" placeholder="e.g. Indiranagar" value={d.from} onChange={e=>updDrone(d.id,"from",e.target.value)}/>
+                <div className="f-lbl">Destination</div>
+                <input className="f-inp" placeholder="e.g. Electronic City" value={d.to} onChange={e=>updDrone(d.id,"to",e.target.value)}/>
+              </div>
+            );
+          })}
+          <button className="add-btn" onClick={addDrone}>
+            <img src={DRONE_SRC} style={{width:16,height:16,filter:"invert(1) sepia(1) saturate(5) hue-rotate(180deg)",opacity:0.9}} alt=""/>
+            ADD UAV
+          </button>
+        </div>
+        <div className="action-row">
+          <button className="btn btn-primary" onClick={predict} disabled={loading}>{loading?"COMPUTING...":"PREDICT PATHS"}</button>
+          <button className="btn btn-ghost" onClick={clearAll}>CLEAR</button>
+        </div>
+      </div>
+
+      {/* SIDEBAR TOGGLE */}
+      <div className="sb-toggle" style={{right:collapsed?0:"var(--sidebar-w)"}} onClick={()=>setCollapsed(c=>!c)}>
+        {collapsed?"◀":"▶"}
+      </div>
+
+      {/* CONFLICT PANEL — only shown after prediction */}
+      {conflicts!==null&&(
+        <div className="conflict-panel">
+          <div className="cp-title">
+            <div className="badge-dot" style={{background:hasConflicts?"var(--amber)":"var(--green)",width:6,height:6,borderRadius:"50%"}}/>
+            ML Conflict Report
+          </div>
+          {hasConflicts
+            ? conflicts.map((c,i)=>(
+                <div className="cp-row" key={i}>
+                  <div className="cp-drones">UAV-{String(c.drone_a+1).padStart(3,"0")} ↔ UAV-{String(c.drone_b+1).padStart(3,"0")}</div>
+                  <div className="cp-resolve">{c.resolved_by}</div>
+                </div>
+              ))
+            : <div className="cp-empty">✓ No conflicts — all paths safe</div>
+          }
+        </div>
+      )}
+
+      {/* TELEMETRY PANEL */}
+      {telemetry&&(
+        <div className="telem-panel">
+          <div className="tp-title">Flight Telemetry</div>
+          {telemetry.map(s=>(
+            <div className="tp-row" key={s.id}>
+              <div className="tp-lbl">
+                <div className="tp-pip" style={{background:s.color}}/>
+                UAV-{String(s.id).padStart(3,"0")}
+              </div>
+              <div className="tp-val">{s.dist} km · {s.alt}m alt</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {loading&&(
+        <div className="loading-overlay">
+          <div className="radar-ring"/>
+          <div className="loading-text">ML COMPUTING SAFE PATHS...</div>
+        </div>
+      )}
+      {toast&&<div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+{% endraw %}
+</html>

@@ -1,0 +1,4 @@
+flask>=2.3
+geopy>=2.4
+scikit-learn>=1.4
+numpy>=1.26
