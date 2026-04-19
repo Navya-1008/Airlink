@@ -1,116 +1,158 @@
-# AirLink — Autonomous Airspace Management System
+# ✈️ AirLink — Autonomous Airspace Management System
 
-AirLink is an intelligent airspace management platform for drones and eVTOLs, designed to ensure safe, efficient, and optimised navigation in urban environments. The system provides real-time drone path prediction, ML-based collision avoidance, and multi-drone coordination — currently scoped for **Bengaluru, India**.
+> Intelligent airspace management for drones and eVTOLs in urban environments
 
-🔗 **Live Demo:** https://airlink-fo5i.onrender.com
-
----
-
-## Features
-
-- **Real-time drone tracking** on an interactive Leaflet.js map (light theme)
-- **ML-based safe path prediction** — MLP neural network predicts 20 waypoints per drone on a 50×50 grid
-- **Automated collision avoidance** — each drone is auto-assigned a unique altitude band (50 m, 80 m, 110 m …) guaranteeing 3-D separation; a time-aware scheduler makes lower-priority drones hover at contested waypoints to resolve 2-D overlaps
-- **Multi-drone coordination** — supports up to 8 simultaneous UAVs
-- **Conflict reporting** — backend reports exactly which drone pairs conflicted and how each was resolved
-- **No manual speed/altitude input** — all flight parameters are assigned automatically by the system
-- **Collapsible dark ATC-style dashboard** — futuristic UI with animated drone icons on the map
+![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)
+![Flask](https://img.shields.io/badge/Flask-2.3-lightgrey?style=flat-square&logo=flask)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-orange?style=flat-square&logo=scikit-learn)
+![Leaflet](https://img.shields.io/badge/Leaflet.js-Map-green?style=flat-square)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)
 
 ---
 
-## Tech Stack
+## 🌐 Live Demo
 
-| Layer      | Technology                               |
-|------------|------------------------------------------|
-| Backend    | Python · Flask                           |
-| ML Model   | scikit-learn MLPRegressor (64×64 layers) |
-| Geocoding  | geopy · Nominatim (OpenStreetMap)        |
-| Frontend   | React 18 · Leaflet.js                    |
-| Fonts      | Rajdhani · Share Tech Mono (Google Fonts)|
-| Deployment | Render (free tier)                       |
+**[https://airlink-fo5i.onrender.com](https://airlink-fo5i.onrender.com)**
+
+> Note: Free tier may take ~50 seconds to wake up on first visit.
 
 ---
 
-## How It Works
+## 🚀 What is AirLink?
 
-1. User enters **Origin** and **Destination** for each drone in the UI
-2. Frontend calls `POST /predict_paths` on the Flask backend
-3. Backend **geocodes** each place name to a coordinate within Bengaluru, then maps it to a 50×50 grid cell
-4. The **MLP model** predicts 20 waypoints per drone across the grid
-5. The **collision resolver** checks for space-time overlaps — drones hover if needed; altitude bands guarantee 3-D separation at all times
-6. Safe paths are converted back to lat/lon and drawn on the map as animated drone icons
-7. The **ML Conflict Report** panel shows any resolved conflicts and the resolution method
+AirLink is an intelligent airspace management platform that enables **safe, efficient, and conflict-free drone navigation** in urban environments. It combines a trained neural network with real-time conflict avoidance to coordinate multiple UAVs simultaneously over Bengaluru's airspace.
 
 ---
 
-## Getting Started (Local)
+## ✨ Features
 
-### 1. Install dependencies
-```bash
-pip install -r requirements.txt
+- 🛸 **Multi-drone coordination** — manage up to 8 UAVs simultaneously
+- 🧠 **ML-based path prediction** — MLP neural network predicts optimal flight waypoints
+- 🚦 **Automated collision avoidance** — unique altitude bands (50m, 80m, 110m...) guarantee 3D separation
+- ⏱️ **Time-aware rerouting** — drones hover at contested waypoints to avoid space-time conflicts
+- 🗺️ **Real-time map visualization** — animated drone icons on an interactive Leaflet map
+- 📊 **Conflict reporting** — detailed report of any resolved conflicts and how they were handled
+- 🎯 **Auto altitude & speed assignment** — no manual inputs needed, the ML system handles it
+
+---
+
+## 🏗️ System Architecture
+
+```
+User Input (Origin + Destination)
+        ↓
+Flask Backend (app.py)
+        ↓
+Geocoding (Nominatim / OpenStreetMap)
+        ↓
+Grid Conversion (50×50 Bengaluru grid)
+        ↓
+MLP Model (model.pkl) → Waypoint Prediction
+        ↓
+Collision Resolver → Altitude Separation + Time-aware Hover
+        ↓
+Lat/Lon Conversion → Leaflet Map Visualization
 ```
 
-### 2. Train the model (first time only)
-```bash
-python train_model.py
-```
-This generates `model.pkl` in the project root.
+---
 
-### 3. Run the server
-```bash
-python app.py
-```
+## 🛠️ Tech Stack
 
-Open [http://localhost:5000](http://localhost:5000) in your browser.
+| Layer | Technology |
+|---|---|
+| Backend | Python · Flask |
+| ML Model | scikit-learn MLPRegressor |
+| Geocoding | geopy / Nominatim (OpenStreetMap) |
+| Frontend | React 18 · Leaflet.js |
+| Fonts | Rajdhani · Share Tech Mono |
+| Deployment | Render |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 AirLink/
-├── app.py              # Flask routes, geocoding, conflict summarisation
-├── ml_logic.py         # MLP inference + time-aware collision avoidance
-├── train_model.py      # Generates model.pkl (run once)
-├── test_model.py       # Sanity-check model predictions
-├── model.pkl           # Trained MLP model (generated by train_model.py)
-├── requirements.txt    # Python dependencies
-├── Procfile            # Render deployment start command
+├── app.py               # Flask routes & geocoding
+├── ml_logic.py          # MLP inference + collision avoidance
+├── train_model.py       # Train & save model.pkl
+├── test_model.py        # Sanity-check model predictions
+├── model.pkl            # Trained model (generated by train_model.py)
+├── requirements.txt     # Python dependencies
 ├── static/
-│   ├── index.html      # Full React + Leaflet ATC dashboard (served directly)
-│   └── camera-drone.png
-└── templates/          # Unused (kept for reference)
+│   ├── index.html       # Full React + Leaflet ATC dashboard
+│   └── camera-drone.png # Drone icon asset
+└── templates/
+    └── index.html       # Flask template reference
 ```
 
-> **Note:** `static/index.html` is served directly via `app.send_static_file()` to avoid Jinja2 conflicts with React's JSX syntax.
+---
+
+## ⚙️ How It Works
+
+1. Enter **Origin** and **Destination** for each drone in the ATC dashboard
+2. Flask backend **geocodes** each location to a 50×50 grid over Bengaluru
+3. The **MLP model** predicts 20 waypoints per drone along the grid
+4. The **collision resolver** checks for space-time overlaps:
+   - Each drone flies at a unique altitude band → guaranteed 3D separation
+   - If two drones share the same grid zone at the same time → lower-priority drone hovers until safe
+5. Safe paths are converted back to lat/lon and drawn on the **live map**
+6. Animated drone icons fly along their paths in real time
+7. The **ML Conflict Report** shows any resolved conflicts
 
 ---
 
-## Limitations
+## 🔧 Getting Started
 
-- Geocoding is scoped to **Bengaluru, India** — place names outside Bengaluru may not resolve
-- The ML model is trained on **synthetic data** — path shapes are interpolated, not road-aware
-- Free Render deployment **sleeps after 15 min of inactivity** — first request after sleep takes ~50 seconds
+### Prerequisites
+- Python 3.10+
+- Git
+
+### Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/Navya-1008/Airlink.git
+cd Airlink
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Train the ML model (only needed once)
+python train_model.py
+
+# Run the server
+python app.py
+```
+
+Open **http://localhost:5000** in your browser.
 
 ---
 
-## Future Enhancements
+## 🔮 Future Enhancements
 
-- Extend geocoding to support any city globally
-- 3-D airspace visualisation for better route planning
-- Road/obstacle-aware path prediction using real map data
-- AI-powered congestion prediction for high-traffic areas
-- Blockchain-based authentication for secure drone communication
-- Pilot dashboards and drone registration modules
-- Live telemetry feed from real drone hardware
+- [ ] 3D airspace visualization for better route planning
+- [ ] AI-powered congestion prediction for high-traffic zones
+- [ ] Blockchain-based authentication for secure drone communication
+- [ ] Live telemetry feed from real drone hardware
+- [ ] Pilot dashboards and drone registration modules
+- [ ] Weather-aware path adjustment
 
 ---
 
-## Team
+## 👩‍💻 Team
 
 Developed as part of an academic initiative:
 
-- Navya B V — [@Navya-1008](https://github.com/Navya-1008)
-- Poorvi V Shetty — [@poorvi22-shetty](https://github.com/poorvi22-shetty)
-- Shravani Satish
-- Swaradaa Raghuram — [@Swaradaaraghuram](https://github.com/Swaradaaraghuram)
+| Name | GitHub |
+|---|---|
+| Navya B V | [@Navya-1008](https://github.com/Navya-1008) |
+| Poorvi V Shetty | [@poorvi22-shetty](https://github.com/poorvi22-shetty) |
+| Shravani Satish | — |
+| Swaradaa Raghuram | [@Swaradaaraghuram](https://github.com/Swaradaaraghuram) |
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
