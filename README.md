@@ -1,16 +1,13 @@
-# ✈️ AirLink — Autonomous Airspace Management System
+# AirLink — Autonomous Airspace Management System
 
+## What is AirLink?
+
+AirLink is an intelligent airspace management platform that enables **safe, efficient, and conflict-free drone navigation** in urban environments. It combines a trained neural network with real-time conflict avoidance to coordinate multiple UAVs simultaneously over Bengaluru's airspace.
 **[https://airlink-fo5i.onrender.com](https://airlink-fo5i.onrender.com)**
 
 ---
 
-## 🚀 What is AirLink?
-
-AirLink is an intelligent airspace management platform that enables **safe, efficient, and conflict-free drone navigation** in urban environments. It combines a trained neural network with real-time conflict avoidance to coordinate multiple UAVs simultaneously over Bengaluru's airspace.
-
----
-
-## ✨ Features
+## Features
 
 - **Multi-drone coordination** — manage up to 8 UAVs simultaneously
 - **ML-based path prediction** — MLP neural network predicts optimal flight waypoints
@@ -22,7 +19,7 @@ AirLink is an intelligent airspace management platform that enables **safe, effi
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 User Input (Origin + Destination)
@@ -42,7 +39,7 @@ Lat/Lon Conversion → Leaflet Map Visualization
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -55,7 +52,7 @@ Lat/Lon Conversion → Leaflet Map Visualization
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 1. Enter **Origin** and **Destination** for each drone in the ATC dashboard
 2. Flask backend **geocodes** each location to a 50×50 grid over Bengaluru
@@ -69,7 +66,7 @@ Lat/Lon Conversion → Leaflet Map Visualization
 
 ---
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 - [ ] 3D airspace visualization for better route planning
 - [ ] AI-powered congestion prediction for high-traffic zones
@@ -80,7 +77,7 @@ Lat/Lon Conversion → Leaflet Map Visualization
 
 ---
 
-## 👩‍💻 Team
+## Team
 
 Developed as part of an academic initiative:
 
